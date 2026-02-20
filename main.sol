@@ -518,3 +518,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
     }
 
     /// @param nodeId Exit node id.
+    /// @return operator Address that registered the node.
+    /// @return endpointHash Stored endpoint hash.
+    /// @return regionId Region slot id.
+    /// @return registeredAtBlock Block at registration.
+    /// @return active Whether node is still active.
+    function getExitNode(uint256 nodeId) external view returns (
+        address operator,
+        bytes32 endpointHash,
+        uint8 regionId,
+        uint256 registeredAtBlock,
+        bool active
+    ) {
+        ExitNodeRecord storage en = exitNodes[nodeId];
+        return (
+            en.operator,
+            en.endpointHash,
+            en.regionId,
+            en.registeredAtBlock,
+            en.active
+        );
+    }
+
+    /// @param sessionId Session id.
+    /// @return tunnelId Tunnel used.
+    /// @return nodeId Exit node used.
+    /// @return openedAtBlock Block when session opened.
+    /// @return bandwidthCreditsUsed Credits reserved for this session.
+    /// @return totalBytesLogged Bytes relayed (set when closed).
+    /// @return closed Whether session was closed.
+    function getSession(uint256 sessionId) external view returns (
+        uint256 tunnelId,
+        uint256 nodeId,
+        uint256 openedAtBlock,
+        uint256 bandwidthCreditsUsed,
+        uint256 totalBytesLogged,
+        bool closed
+    ) {
+        SessionRecord storage sr = sessionRecords[sessionId];
+        return (
+            sr.tunnelId,
