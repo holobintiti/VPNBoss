@@ -238,3 +238,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
     }
 
     function updateTunnelMetadata(uint256 tunnelId, bytes32 labelHash) external whenNotPaused {
+        TunnelConfig storage tc = tunnelConfigs[tunnelId];
+        if (tc.createdAtBlock == 0) revert VBN_TunnelNotFound();
+        if (tc.subscriber != msg.sender) revert VBN_TunnelNotOwner();
+        if (tc.revoked) revert VBN_TunnelNotFound();
+        tunnelMetadata[tunnelId].labelHash = labelHash;
+        emit TunnelMetadataUpdated(tunnelId, labelHash, block.number);
+    }
+
+    function appendAuditLog(uint8 entryType, uint256 refId, bytes32 extraHash) external onlyRelayKeeper {
+        _auditLog.push(AuditLogEntry({
+            entryType: entryType,
+            refId: refId,
+            actor: msg.sender,
+            atBlock: block.number,
+            extraHash: extraHash
+        }));
+        emit AuditLogAppended(_auditLog.length - 1, entryType, refId, block.number);
+    }
+
+    function _effectiveMaxTunnels(address subscriber) internal view returns (uint256) {
+        uint8 tier = subscriberTier[subscriber];
+        SubscriptionTier storage st = subscriptionTiers[tier];
+        if (st.active && st.maxTunnels > 0) return st.maxTunnels;
+        return VBN_MAX_TUNNELS_PER_USER;
+    }
+
+    function _validateTunnelActive(uint256 tunnelId) internal view returns (TunnelConfig storage tc) {
+        tc = tunnelConfigs[tunnelId];
+        if (tc.createdAtBlock == 0) revert VBN_TunnelNotFound();
+        if (tc.revoked || block.number >= tc.expiresAtBlock) revert VBN_TunnelExpired();
+    }
+
+    function _validateNodeActiveForRegion(uint256 nodeId, uint8 regionId) internal view returns (ExitNodeRecord storage en) {
+        en = exitNodes[nodeId];
+        if (en.registeredAtBlock == 0 || !en.active) revert VBN_NodeNotFound();
+        if (en.regionId != regionId) revert VBN_RegionInvalid();
+    }
+
+    /// @param regionId Region identifier (0 to 255).
+    /// @param maxNodes Maximum exit nodes allowed in this region.
