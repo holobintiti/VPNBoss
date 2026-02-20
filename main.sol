@@ -678,3 +678,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
         configHashes = new bytes32[](n);
         regionIds = new uint8[](n);
         expiresAtBlocks = new uint256[](n);
+        bandwidthCreditsWei = new uint256[](n);
+        createdAtBlocks = new uint256[](n);
+        revoked = new bool[](n);
+        labelHashes = new bytes32[](n);
+        lastUsedAtBlocks = new uint256[](n);
+        totalSessionsCounts = new uint256[](n);
+        for (uint256 i = 0; i < n; i++) {
+            uint256 tid = tunnelIds[i];
+            TunnelConfig storage tc = tunnelConfigs[tid];
+            TunnelMetadata storage tm = tunnelMetadata[tid];
+            subscribers[i] = tc.subscriber;
+            configHashes[i] = tc.configHash;
+            regionIds[i] = tc.regionId;
+            expiresAtBlocks[i] = tc.expiresAtBlock;
+            bandwidthCreditsWei[i] = tc.bandwidthCreditsWei;
+            createdAtBlocks[i] = tc.createdAtBlock;
+            revoked[i] = tc.revoked;
+            labelHashes[i] = tm.labelHash;
+            lastUsedAtBlocks[i] = tm.lastUsedAtBlock;
+            totalSessionsCounts[i] = tm.totalSessionsCount;
+        }
+    }
+
+    /// @param nodeId Exit node id.
+    /// @return operator Node operator address.
+    /// @return endpointHash Endpoint hash.
+    /// @return regionId Region id.
+    /// @return registeredAtBlock Registration block.
+    /// @return active Active flag.
+    /// @return sessionsServed Total sessions served.
+    /// @return totalBytesRelayed Total bytes relayed.
+    /// @return lastActivityBlock Last activity block.
+    function getNodeFullView(uint256 nodeId) external view returns (
+        address operator,
+        bytes32 endpointHash,
+        uint8 regionId,
+        uint256 registeredAtBlock,
+        bool active,
+        uint256 sessionsServed,
+        uint256 totalBytesRelayed,
