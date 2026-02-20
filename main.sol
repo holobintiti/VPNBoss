@@ -158,3 +158,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
 
     struct SubscriptionTier {
         uint256 maxTunnels;
+        uint256 minStakeWei;
+        bool active;
+    }
+
+    mapping(uint256 => TunnelConfig) public tunnelConfigs;
+    mapping(uint256 => TunnelMetadata) public tunnelMetadata;
+    mapping(address => uint256[]) public tunnelIdsBySubscriber;
+    mapping(uint256 => ExitNodeRecord) public exitNodes;
+    mapping(uint8 => uint256[]) public nodeIdsByRegion;
+    mapping(uint256 => SessionRecord) public sessionRecords;
+    mapping(uint256 => uint256[]) public sessionIdsByTunnel;
+    mapping(uint256 => uint256[]) public sessionIdsByNode;
+    mapping(uint8 => RegionSlot) public regionSlots;
+    mapping(address => uint256) public pendingTreasuryWei;
+    mapping(uint256 => NodeStats) public nodeStats;
+    mapping(uint8 => SubscriptionTier) public subscriptionTiers;
+    mapping(address => uint8) public subscriberTier;
+    AuditLogEntry[] private _auditLog;
+    mapping(uint8 => uint256[]) private _tunnelIdsByRegion;
+
+    uint256[] private _allTunnelIds;
+    uint256[] private _allNodeIds;
+    uint256[] private _allSessionIds;
+
+    modifier whenNotPaused() {
+        if (gatewayPaused) revert VBN_GatewayPaused();
+        _;
+    }
+
+    modifier onlyRelayKeeper() {
+        if (msg.sender != relayKeeperRole) revert VBN_NotRelayKeeper();
+        _;
+    }
+
+    constructor() {
+        vbnTreasury = address(0xA7f2C4e6B8d0E1a3F5c7D9e1B3d5F7a9C1e4A6);
+        gatewayKeeper = address(0xB8e3D5f7A9c1E4b6D8f0A2c4E6b8D0f2A4c6);
+        relayKeeper = address(0xC9f4E6a8B0d2F4b6C8e0A2d4F6b8C0e2A4c6);
+        auditVault = address(0xD0a5F7b9C1e3D5f7A9b1C3e5D7f9A1b3C5d7);
+        relayKeeperRole = address(0xE1b6A8c0D2e4F6a8B0c2D4e6F8a0B2c4D6e8);
