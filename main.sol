@@ -758,3 +758,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
         );
     }
 
+    function getTunnelMetadata(uint256 tunnelId) external view returns (
+        bytes32 labelHash,
+        uint256 lastUsedAtBlock,
+        uint256 totalSessionsCount
+    ) {
+        TunnelMetadata storage tm = tunnelMetadata[tunnelId];
+        return (tm.labelHash, tm.lastUsedAtBlock, tm.totalSessionsCount);
+    }
+
+    function getNodeStats(uint256 nodeId) external view returns (
+        uint256 sessionsServed,
+        uint256 totalBytesRelayed,
+        uint256 lastActivityBlock
+    ) {
+        NodeStats storage ns = nodeStats[nodeId];
+        return (ns.sessionsServed, ns.totalBytesRelayed, ns.lastActivityBlock);
+    }
+
+    function getAuditLogLength() external view returns (uint256) {
+        return _auditLog.length;
+    }
+
+    function getAuditLogSlice(uint256 offset, uint256 limit) external view returns (
+        uint8[] memory entryTypes,
+        uint256[] memory refIds,
+        address[] memory actors,
+        uint256[] memory atBlocks,
+        bytes32[] memory extraHashes
+    ) {
+        uint256 len = _auditLog.length;
+        if (offset >= len) {
+            return (
+                new uint8[](0),
+                new uint256[](0),
+                new address[](0),
+                new uint256[](0),
+                new bytes32[](0)
+            );
+        }
+        uint256 end = offset + limit;
