@@ -798,3 +798,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
             );
         }
         uint256 end = offset + limit;
+        if (end > len) end = len;
+        uint256 sliceLen = end - offset;
+
+        entryTypes = new uint8[](sliceLen);
+        refIds = new uint256[](sliceLen);
+        actors = new address[](sliceLen);
+        atBlocks = new uint256[](sliceLen);
+        extraHashes = new bytes32[](sliceLen);
+
+        for (uint256 i = 0; i < sliceLen; i++) {
+            AuditLogEntry storage e = _auditLog[offset + i];
+            entryTypes[i] = e.entryType;
+            refIds[i] = e.refId;
+            actors[i] = e.actor;
+            atBlocks[i] = e.atBlock;
+            extraHashes[i] = e.extraHash;
+        }
+    }
+
+    function getTunnelConfigsBatch(uint256[] calldata tunnelIds) external view returns (
+        address[] memory subscribers,
+        bytes32[] memory configHashes,
+        uint8[] memory regionIds,
+        uint256[] memory expiresAtBlocks,
+        uint256[] memory bandwidthCreditsWei,
+        uint256[] memory createdAtBlocks,
+        bool[] memory revoked
+    ) {
+        uint256 n = tunnelIds.length;
+        subscribers = new address[](n);
+        configHashes = new bytes32[](n);
+        regionIds = new uint8[](n);
+        expiresAtBlocks = new uint256[](n);
+        bandwidthCreditsWei = new uint256[](n);
+        createdAtBlocks = new uint256[](n);
+        revoked = new bool[](n);
+        for (uint256 i = 0; i < n; i++) {
+            TunnelConfig storage tc = tunnelConfigs[tunnelIds[i]];
+            subscribers[i] = tc.subscriber;
+            configHashes[i] = tc.configHash;
