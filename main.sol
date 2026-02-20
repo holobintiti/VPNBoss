@@ -358,3 +358,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
         TunnelConfig storage tc = tunnelConfigs[tunnelId];
         if (tc.createdAtBlock == 0) revert VBN_TunnelNotFound();
         if (tc.subscriber != msg.sender && msg.sender != owner()) revert VBN_TunnelNotOwner();
+        if (tc.revoked) revert VBN_TunnelNotFound();
+
+        tc.revoked = true;
+        uint256 refund = tc.bandwidthCreditsWei;
+        tc.bandwidthCreditsWei = 0;
+        if (refund > 0) {
+            (bool sent,) = tc.subscriber.call{value: refund}("");
+            if (!sent) revert VBN_TransferFailed();
+        }
+        emit TunnelRevoked(tunnelId, msg.sender, block.number);
+    }
+
+    /// @param tunnelId Tunnel to credit; must be active and owned by caller.
+    /// @dev Sends msg.value to tunnel's bandwidthCreditsWei; no fee applied on deposit.
+    function depositBandwidthCredits(uint256 tunnelId) external payable whenNotPaused nonReentrant {
+        TunnelConfig storage tc = tunnelConfigs[tunnelId];
+        if (tc.createdAtBlock == 0) revert VBN_TunnelNotFound();
+        if (tc.subscriber != msg.sender) revert VBN_TunnelNotOwner();
+        if (tc.revoked || block.number >= tc.expiresAtBlock) revert VBN_TunnelExpired();
+        if (msg.value == 0) revert VBN_ZeroAmount();
+
+        tc.bandwidthCreditsWei += msg.value;
+        emit BandwidthCreditsDeposited(msg.sender, tunnelId, msg.value, block.number);
+    }
+
+    /// @param endpointHash Keccak256 of node endpoint descriptor.
+    /// @param regionId Region slot; must be configured and not full.
+    /// @return nodeId Id of the registered exit node.
+    function registerExitNode(
+        bytes32 endpointHash,
+        uint8 regionId
+    ) external whenNotPaused nonReentrant returns (uint256 nodeId) {
+        if (msg.sender == address(0)) revert VBN_ZeroAddress();
+        if (endpointHash == bytes32(0)) revert VBN_ConfigHashZero();
+        if (!regionSlots[regionId].configured) revert VBN_RegionInvalid();
+        RegionSlot storage rs = regionSlots[regionId];
+        if (rs.nodeCount >= rs.maxNodes) revert VBN_RegionSlotFull();
+
+        nodeCounter++;
+        nodeId = nodeCounter;
