@@ -118,3 +118,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
         uint8 regionId;
         uint256 registeredAtBlock;
         bool active;
+    }
+
+    struct SessionRecord {
+        uint256 tunnelId;
+        uint256 nodeId;
+        uint256 openedAtBlock;
+        uint256 bandwidthCreditsUsed;
+        uint256 totalBytesLogged;
+        bool closed;
+    }
+
+    struct RegionSlot {
+        uint256 maxNodes;
+        uint256 feeBps;
+        uint256 nodeCount;
+        bool configured;
+    }
+
+    struct TunnelMetadata {
+        bytes32 labelHash;
+        uint256 lastUsedAtBlock;
+        uint256 totalSessionsCount;
+    }
+
+    struct NodeStats {
+        uint256 sessionsServed;
+        uint256 totalBytesRelayed;
+        uint256 lastActivityBlock;
+    }
+
+    struct AuditLogEntry {
+        uint8 entryType;
+        uint256 refId;
+        address actor;
+        uint256 atBlock;
+        bytes32 extraHash;
+    }
+
+    struct SubscriptionTier {
+        uint256 maxTunnels;
