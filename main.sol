@@ -38,3 +38,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
         uint256 indexed nodeId,
         uint256 bandwidthCreditsUsed,
         uint256 atBlock
+    );
+    event SessionClosed(uint256 indexed sessionId, uint256 totalBytesLogged, uint256 atBlock);
+    event BandwidthCreditsDeposited(address indexed subscriber, uint256 tunnelId, uint256 amountWei, uint256 atBlock);
+    event BandwidthCreditsConsumed(uint256 indexed tunnelId, uint256 amount, uint256 atBlock);
+    event RegionSlotUpdated(uint8 regionId, uint256 maxNodes, uint256 feeBps, uint256 atBlock);
+    event GatewayPauseToggled(bool paused);
+    event TreasurySweep(address indexed to, uint256 amountWei, uint256 atBlock);
+    event RelayKeeperUpdated(address indexed previousKeeper, address indexed newKeeper);
+    event TunnelMetadataUpdated(uint256 indexed tunnelId, bytes32 labelHash, uint256 atBlock);
+    event AuditLogAppended(uint256 indexed logIndex, uint8 entryType, uint256 refId, uint256 atBlock);
+    event SubscriptionTierSet(uint8 tierId, uint256 maxTunnels, uint256 minStakeWei, uint256 atBlock);
+    event SubscriberTierAssigned(address indexed subscriber, uint8 tierId, uint256 atBlock);
+    event SubscriptionTierDeactivated(uint8 tierId, uint256 atBlock);
+
+    error VBN_ZeroAddress();
+    error VBN_ZeroAmount();
+    error VBN_GatewayPaused();
+    error VBN_TunnelNotFound();
+    error VBN_TunnelExpired();
+    error VBN_TunnelNotOwner();
+    error VBN_NodeNotFound();
+    error VBN_NodeNotOperator();
+    error VBN_NodeInactive();
+    error VBN_SessionNotFound();
+    error VBN_SessionAlreadyClosed();
+    error VBN_RegionInvalid();
+    error VBN_RegionSlotFull();
+    error VBN_InsufficientCredits();
+    error VBN_TransferFailed();
+    error VBN_ConfigHashZero();
+    error VBN_MaxTunnelsPerUser();
+    error VBN_MaxNodesPerRegion();
+    error VBN_ExpiryTooFar();
+    error VBN_ExpiryPast();
+    error VBN_Reentrancy();
+    error VBN_NotRelayKeeper();
+    error VBN_TierLimit();
+
+    uint256 public constant VBN_BPS_DENOM = 10000;
+    uint256 public constant VBN_MAX_TIERS = 8;
