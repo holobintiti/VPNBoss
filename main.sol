@@ -638,3 +638,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
         TunnelMetadata storage tm = tunnelMetadata[tunnelId];
         return (
             tc.subscriber,
+            tc.configHash,
+            tc.regionId,
+            tc.expiresAtBlock,
+            tc.bandwidthCreditsWei,
+            tc.createdAtBlock,
+            tc.revoked,
+            tm.labelHash,
+            tm.lastUsedAtBlock,
+            tm.totalSessionsCount
+        );
+    }
+
+    /// @param tunnelIds Tunnel ids to query.
+    /// @return subscribers Subscriber per tunnel.
+    /// @return configHashes Config hash per tunnel.
+    /// @return regionIds Region id per tunnel.
+    /// @return expiresAtBlocks Expiry block per tunnel.
+    /// @return bandwidthCreditsWei Credits per tunnel.
+    /// @return createdAtBlocks Creation block per tunnel.
+    /// @return revoked Revoked flag per tunnel.
+    /// @return labelHashes Label hash per tunnel.
+    /// @return lastUsedAtBlocks Last used block per tunnel.
+    /// @return totalSessionsCounts Session count per tunnel.
+    function getTunnelFullViewBatch(uint256[] calldata tunnelIds) external view returns (
+        address[] memory subscribers,
+        bytes32[] memory configHashes,
+        uint8[] memory regionIds,
+        uint256[] memory expiresAtBlocks,
+        uint256[] memory bandwidthCreditsWei,
+        uint256[] memory createdAtBlocks,
+        bool[] memory revoked,
+        bytes32[] memory labelHashes,
+        uint256[] memory lastUsedAtBlocks,
+        uint256[] memory totalSessionsCounts
+    ) {
+        uint256 n = tunnelIds.length;
+        subscribers = new address[](n);
+        configHashes = new bytes32[](n);
+        regionIds = new uint8[](n);
+        expiresAtBlocks = new uint256[](n);
