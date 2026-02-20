@@ -718,3 +718,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
         bool active,
         uint256 sessionsServed,
         uint256 totalBytesRelayed,
+        uint256 lastActivityBlock
+    ) {
+        ExitNodeRecord storage en = exitNodes[nodeId];
+        NodeStats storage ns = nodeStats[nodeId];
+        return (
+            en.operator,
+            en.endpointHash,
+            en.regionId,
+            en.registeredAtBlock,
+            en.active,
+            ns.sessionsServed,
+            ns.totalBytesRelayed,
+            ns.lastActivityBlock
+        );
+    }
+
+    function getConfigSnapshot() external view returns (
+        address vbnTreasury_,
+        address gatewayKeeper_,
+        address relayKeeper_,
+        address auditVault_,
+        uint256 genesisBlock_,
+        uint256 tunnelCounter_,
+        uint256 nodeCounter_,
+        uint256 sessionCounter_,
+        bool gatewayPaused_
+    ) {
+        return (
+            vbnTreasury,
+            gatewayKeeper,
+            relayKeeper,
+            auditVault,
+            genesisBlock,
+            tunnelCounter,
+            nodeCounter,
+            sessionCounter,
+            gatewayPaused
+        );
+    }
+
