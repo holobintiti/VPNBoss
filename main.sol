@@ -838,3 +838,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
             TunnelConfig storage tc = tunnelConfigs[tunnelIds[i]];
             subscribers[i] = tc.subscriber;
             configHashes[i] = tc.configHash;
+            regionIds[i] = tc.regionId;
+            expiresAtBlocks[i] = tc.expiresAtBlock;
+            bandwidthCreditsWei[i] = tc.bandwidthCreditsWei;
+            createdAtBlocks[i] = tc.createdAtBlock;
+            revoked[i] = tc.revoked;
+        }
+    }
+
+    function getExitNodesBatch(uint256[] calldata nodeIds) external view returns (
+        address[] memory operators,
+        bytes32[] memory endpointHashes,
+        uint8[] memory regionIds,
+        uint256[] memory registeredAtBlocks,
+        bool[] memory active
+    ) {
+        uint256 n = nodeIds.length;
+        operators = new address[](n);
+        endpointHashes = new bytes32[](n);
+        regionIds = new uint8[](n);
+        registeredAtBlocks = new uint256[](n);
+        active = new bool[](n);
+        for (uint256 i = 0; i < n; i++) {
+            ExitNodeRecord storage en = exitNodes[nodeIds[i]];
+            operators[i] = en.operator;
+            endpointHashes[i] = en.endpointHash;
+            regionIds[i] = en.regionId;
+            registeredAtBlocks[i] = en.registeredAtBlock;
+            active[i] = en.active;
+        }
+    }
+
+    function getSessionRecordsBatch(uint256[] calldata sessionIds) external view returns (
+        uint256[] memory tunnelIds,
+        uint256[] memory nodeIds,
+        uint256[] memory openedAtBlocks,
+        uint256[] memory bandwidthCreditsUsed,
+        uint256[] memory totalBytesLogged,
+        bool[] memory closed
+    ) {
+        uint256 n = sessionIds.length;
