@@ -478,3 +478,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
     }
 
     /// @dev Sends accumulated pendingTreasuryWei[vbnTreasury] to vbnTreasury. Callable by owner or vbnTreasury.
+    function sweepTreasury() external nonReentrant {
+        if (msg.sender != owner() && msg.sender != vbnTreasury) revert VBN_ZeroAddress();
+        uint256 amount = pendingTreasuryWei[vbnTreasury];
+        if (amount == 0) revert VBN_ZeroAmount();
+        pendingTreasuryWei[vbnTreasury] = 0;
+        (bool sent,) = vbnTreasury.call{value: amount}("");
+        if (!sent) revert VBN_TransferFailed();
+        emit TreasurySweep(vbnTreasury, amount, block.number);
+    }
+
+    /// @param tunnelId Tunnel id.
+    /// @return subscriber Owner of the tunnel.
+    /// @return configHash Stored config hash.
+    /// @return regionId Region slot id.
+    /// @return expiresAtBlock Block after which tunnel is expired.
+    /// @return bandwidthCreditsWei Remaining bandwidth credits (wei).
+    /// @return createdAtBlock Block at creation.
+    /// @return revoked Whether tunnel was revoked.
+    function getTunnelConfig(uint256 tunnelId) external view returns (
+        address subscriber,
+        bytes32 configHash,
+        uint8 regionId,
+        uint256 expiresAtBlock,
+        uint256 bandwidthCreditsWei,
+        uint256 createdAtBlock,
+        bool revoked
+    ) {
+        TunnelConfig storage tc = tunnelConfigs[tunnelId];
+        return (
+            tc.subscriber,
+            tc.configHash,
+            tc.regionId,
+            tc.expiresAtBlock,
+            tc.bandwidthCreditsWei,
+            tc.createdAtBlock,
+            tc.revoked
+        );
+    }
+
+    /// @param nodeId Exit node id.
