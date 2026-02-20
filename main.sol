@@ -318,3 +318,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
             bandwidthCreditsWei: msg.value,
             createdAtBlock: block.number,
             revoked: false
+        });
+        tunnelIdsBySubscriber[msg.sender].push(tunnelId);
+        _allTunnelIds.push(tunnelId);
+        _tunnelIdsByRegion[regionId].push(tunnelId);
+        tunnelMetadata[tunnelId] = TunnelMetadata({
+            labelHash: bytes32(0),
+            lastUsedAtBlock: 0,
+            totalSessionsCount: 0
+        });
+
+        uint256 feeWei = 0;
+        if (regionSlots[regionId].feeBps > 0 && msg.value > 0) {
+            feeWei = (msg.value * regionSlots[regionId].feeBps) / VBN_BPS_DENOM;
+            pendingTreasuryWei[vbnTreasury] += feeWei;
+            tunnelConfigs[tunnelId].bandwidthCreditsWei = msg.value - feeWei;
+        }
+
+        emit TunnelCreated(tunnelId, msg.sender, configHash, regionId, expiresAt, block.number);
+        return tunnelId;
+    }
+
+    /// @param tunnelId Tunnel to extend.
+    /// @param additionalBlocks Blocks to add to current expiry; capped by VBN_MAX_EXTEND_BLOCKS.
+    function extendTunnel(uint256 tunnelId, uint256 additionalBlocks) external whenNotPaused nonReentrant {
+        TunnelConfig storage tc = tunnelConfigs[tunnelId];
+        if (tc.createdAtBlock == 0) revert VBN_TunnelNotFound();
+        if (tc.subscriber != msg.sender) revert VBN_TunnelNotOwner();
+        if (tc.revoked) revert VBN_TunnelNotFound();
+        if (block.number >= tc.expiresAtBlock) revert VBN_TunnelExpired();
+        if (additionalBlocks == 0 || additionalBlocks > VBN_MAX_EXTEND_BLOCKS) revert VBN_ExpiryTooFar();
+
+        tc.expiresAtBlock += additionalBlocks;
+        emit TunnelExtended(tunnelId, tc.expiresAtBlock, block.number);
+    }
+
+    /// @param tunnelId Tunnel to revoke; remaining bandwidth credits are refunded to subscriber.
+    function revokeTunnel(uint256 tunnelId) external whenNotPaused nonReentrant {
+        TunnelConfig storage tc = tunnelConfigs[tunnelId];
+        if (tc.createdAtBlock == 0) revert VBN_TunnelNotFound();
+        if (tc.subscriber != msg.sender && msg.sender != owner()) revert VBN_TunnelNotOwner();
