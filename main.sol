@@ -558,3 +558,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
         SessionRecord storage sr = sessionRecords[sessionId];
         return (
             sr.tunnelId,
+            sr.nodeId,
+            sr.openedAtBlock,
+            sr.bandwidthCreditsUsed,
+            sr.totalBytesLogged,
+            sr.closed
+        );
+    }
+
+    /// @param regionId Region id.
+    /// @return maxNodes Max nodes allowed in region.
+    /// @return feeBps Fee in bps on tunnel creation.
+    /// @return nodeCount Current number of registered nodes.
+    /// @return configured Whether region was configured.
+    function getRegionSlot(uint8 regionId) external view returns (
+        uint256 maxNodes,
+        uint256 feeBps,
+        uint256 nodeCount,
+        bool configured
+    ) {
+        RegionSlot storage rs = regionSlots[regionId];
+        return (rs.maxNodes, rs.feeBps, rs.nodeCount, rs.configured);
+    }
+
+    function getTunnelIdsBySubscriber(address subscriber) external view returns (uint256[] memory) {
+        return tunnelIdsBySubscriber[subscriber];
+    }
+
+    function getNodeIdsByRegion(uint8 regionId) external view returns (uint256[] memory) {
+        return nodeIdsByRegion[regionId];
+    }
+
+    function getTunnelIdsByRegion(uint8 regionId) external view returns (uint256[] memory) {
+        return _tunnelIdsByRegion[regionId];
+    }
+
+    function getSessionIdsByTunnel(uint256 tunnelId) external view returns (uint256[] memory) {
+        return sessionIdsByTunnel[tunnelId];
+    }
+
+    function getSessionIdsByNode(uint256 nodeId) external view returns (uint256[] memory) {
