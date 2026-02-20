@@ -398,3 +398,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
 
         nodeCounter++;
         nodeId = nodeCounter;
+        exitNodes[nodeId] = ExitNodeRecord({
+            operator: msg.sender,
+            endpointHash: endpointHash,
+            regionId: regionId,
+            registeredAtBlock: block.number,
+            active: true
+        });
+        nodeIdsByRegion[regionId].push(nodeId);
+        rs.nodeCount++;
+        _allNodeIds.push(nodeId);
+        emit ExitNodeRegistered(nodeId, msg.sender, endpointHash, regionId, block.number);
+        return nodeId;
+    }
+
+    function unregisterExitNode(uint256 nodeId) external whenNotPaused nonReentrant {
+        ExitNodeRecord storage en = exitNodes[nodeId];
+        if (en.registeredAtBlock == 0) revert VBN_NodeNotFound();
+        if (en.operator != msg.sender && msg.sender != owner()) revert VBN_NodeNotOperator();
+        if (!en.active) revert VBN_NodeInactive();
+
+        en.active = false;
+        regionSlots[en.regionId].nodeCount--;
+        emit ExitNodeUnregistered(nodeId, block.number);
+    }
+
+    /// @param tunnelId Active tunnel for the session.
+    /// @param nodeId Active exit node in same region as tunnel.
+    /// @param bandwidthCreditsToReserve Wei to reserve from tunnel for this session.
+    /// @return sessionId Id of the opened session.
+    function openSession(
+        uint256 tunnelId,
+        uint256 nodeId,
+        uint256 bandwidthCreditsToReserve
+    ) external onlyRelayKeeper whenNotPaused nonReentrant returns (uint256 sessionId) {
+        TunnelConfig storage tc = _validateTunnelActive(tunnelId);
+        ExitNodeRecord storage en = _validateNodeActiveForRegion(nodeId, tc.regionId);
+        if (bandwidthCreditsToReserve > tc.bandwidthCreditsWei) revert VBN_InsufficientCredits();
+
+        tc.bandwidthCreditsWei -= bandwidthCreditsToReserve;
+        sessionCounter++;
