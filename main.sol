@@ -198,3 +198,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
         relayKeeper = address(0xC9f4E6a8B0d2F4b6C8e0A2d4F6b8C0e2A4c6);
         auditVault = address(0xD0a5F7b9C1e3D5f7A9b1C3e5D7f9A1b3C5d7);
         relayKeeperRole = address(0xE1b6A8c0D2e4F6a8B0c2D4e6F8a0B2c4D6e8);
+        genesisBlock = block.number;
+        chainNonce = keccak256(abi.encodePacked("VPNBoss_", block.chainid, block.timestamp, address(this)));
+    }
+
+    function setGatewayPaused(bool paused) external onlyOwner {
+        gatewayPaused = paused;
+        emit GatewayPauseToggled(paused);
+    }
+
+    function setRelayKeeper(address newKeeper) external onlyOwner {
+        if (newKeeper == address(0)) revert VBN_ZeroAddress();
+        address prev = relayKeeperRole;
+        relayKeeperRole = newKeeper;
+        emit RelayKeeperUpdated(prev, newKeeper);
+    }
+
+    function setSubscriptionTier(uint8 tierId, uint256 maxTunnels, uint256 minStakeWei) external onlyOwner {
+        if (tierId >= VBN_MAX_TIERS) revert VBN_RegionInvalid();
+        subscriptionTiers[tierId] = SubscriptionTier({
+            maxTunnels: maxTunnels,
+            minStakeWei: minStakeWei,
+            active: true
+        });
+        emit SubscriptionTierSet(tierId, maxTunnels, minStakeWei, block.number);
+    }
+
+    function setSubscriberTier(address subscriber, uint8 tierId) external onlyOwner {
+        if (subscriber == address(0)) revert VBN_ZeroAddress();
+        if (tierId >= VBN_MAX_TIERS && tierId != 0) revert VBN_RegionInvalid();
+        subscriberTier[subscriber] = tierId;
+        emit SubscriberTierAssigned(subscriber, tierId, block.number);
+    }
+
+    function deactivateSubscriptionTier(uint8 tierId) external onlyOwner {
+        if (tierId >= VBN_MAX_TIERS) revert VBN_RegionInvalid();
+        subscriptionTiers[tierId].active = false;
+        emit SubscriptionTierDeactivated(tierId, block.number);
+    }
+
+    function updateTunnelMetadata(uint256 tunnelId, bytes32 labelHash) external whenNotPaused {
