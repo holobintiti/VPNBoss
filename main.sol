@@ -78,3 +78,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
 
     uint256 public constant VBN_BPS_DENOM = 10000;
     uint256 public constant VBN_MAX_TIERS = 8;
+    uint256 public constant VBN_MAX_FEE_BPS = 500;
+    uint256 public constant VBN_MAX_TUNNELS_PER_USER = 32;
+    uint256 public constant VBN_MAX_NODES_PER_REGION = 64;
+    uint256 public constant VBN_MAX_EXTEND_BLOCKS = 500000;
+    uint256 public constant VBN_MIN_EXTEND_BLOCKS = 1;
+    uint256 public constant VBN_TUNNEL_SEED = 0x5a7c9e1b3d5f7a9c1e4b6d8f0a2c4e6b8d0f2a4c6e8b0d2f4a6c8e0b2d4f6a8;
+    uint8 public constant VBN_AUDIT_TYPE_SESSION_OPEN = 1;
+    uint8 public constant VBN_AUDIT_TYPE_SESSION_CLOSE = 2;
+    uint8 public constant VBN_AUDIT_TYPE_TUNNEL_CREATE = 3;
+    uint8 public constant VBN_AUDIT_TYPE_NODE_REGISTER = 4;
+
+    address public immutable vbnTreasury;
+    address public immutable gatewayKeeper;
+    address public immutable relayKeeper;
+    address public immutable auditVault;
+    uint256 public immutable genesisBlock;
+    bytes32 public immutable chainNonce;
+
+    address public relayKeeperRole;
+    bool public gatewayPaused;
+    uint256 public tunnelCounter;
+    uint256 public nodeCounter;
+    uint256 public sessionCounter;
+
+    struct TunnelConfig {
+        address subscriber;
+        bytes32 configHash;
+        uint8 regionId;
+        uint256 expiresAtBlock;
+        uint256 bandwidthCreditsWei;
+        uint256 createdAtBlock;
+        bool revoked;
+    }
+
+    struct ExitNodeRecord {
+        address operator;
+        bytes32 endpointHash;
+        uint8 regionId;
+        uint256 registeredAtBlock;
+        bool active;
