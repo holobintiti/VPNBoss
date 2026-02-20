@@ -438,3 +438,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
 
         tc.bandwidthCreditsWei -= bandwidthCreditsToReserve;
         sessionCounter++;
+        sessionId = sessionCounter;
+        sessionRecords[sessionId] = SessionRecord({
+            tunnelId: tunnelId,
+            nodeId: nodeId,
+            openedAtBlock: block.number,
+            bandwidthCreditsUsed: bandwidthCreditsToReserve,
+            totalBytesLogged: 0,
+            closed: false
+        });
+        sessionIdsByTunnel[tunnelId].push(sessionId);
+        sessionIdsByNode[nodeId].push(sessionId);
+        _allSessionIds.push(sessionId);
+
+        emit SessionOpened(sessionId, tunnelId, nodeId, bandwidthCreditsToReserve, block.number);
+        emit BandwidthCreditsConsumed(tunnelId, bandwidthCreditsToReserve, block.number);
+        return sessionId;
+    }
+
+    /// @param sessionId Session to close.
+    /// @param totalBytesLogged Total bytes relayed in this session; stored for node stats.
+    function closeSession(uint256 sessionId, uint256 totalBytesLogged) external onlyRelayKeeper whenNotPaused nonReentrant {
+        SessionRecord storage sr = sessionRecords[sessionId];
+        if (sr.openedAtBlock == 0) revert VBN_SessionNotFound();
+        if (sr.closed) revert VBN_SessionAlreadyClosed();
+
+        sr.closed = true;
+        sr.totalBytesLogged = totalBytesLogged;
+
+        tunnelMetadata[sr.tunnelId].lastUsedAtBlock = block.number;
+        tunnelMetadata[sr.tunnelId].totalSessionsCount++;
+
+        NodeStats storage ns = nodeStats[sr.nodeId];
+        ns.sessionsServed++;
+        ns.totalBytesRelayed += totalBytesLogged;
+        ns.lastActivityBlock = block.number;
+
+        emit SessionClosed(sessionId, totalBytesLogged, block.number);
+    }
+
+    /// @dev Sends accumulated pendingTreasuryWei[vbnTreasury] to vbnTreasury. Callable by owner or vbnTreasury.
