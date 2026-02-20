@@ -278,3 +278,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
 
     /// @param regionId Region identifier (0 to 255).
     /// @param maxNodes Maximum exit nodes allowed in this region.
+    /// @param feeBps Fee in basis points (of tunnel creation payment) sent to treasury; max VBN_MAX_FEE_BPS.
+    function configureRegion(uint8 regionId, uint256 maxNodes, uint256 feeBps) external onlyOwner {
+        if (feeBps > VBN_MAX_FEE_BPS) revert VBN_RegionInvalid();
+        regionSlots[regionId] = RegionSlot({
+            maxNodes: maxNodes,
+            feeBps: feeBps,
+            nodeCount: regionSlots[regionId].nodeCount,
+            configured: true
+        });
+        emit RegionSlotUpdated(regionId, maxNodes, feeBps, block.number);
+    }
+
+    /// @param configHash Keccak256 of tunnel config (e.g. from computeConfigHash).
+    /// @param regionId Region slot id; region must be configured via configureRegion.
+    /// @param expiryBlocksFromNow Tunnel validity duration in blocks; capped by VBN_MAX_EXTEND_BLOCKS.
+    /// @return tunnelId Id of the created tunnel.
+    function createTunnel(
+        bytes32 configHash,
+        uint8 regionId,
+        uint256 expiryBlocksFromNow
+    ) external payable whenNotPaused nonReentrant returns (uint256 tunnelId) {
+        if (msg.sender == address(0)) revert VBN_ZeroAddress();
+        if (configHash == bytes32(0)) revert VBN_ConfigHashZero();
+        if (expiryBlocksFromNow == 0 || expiryBlocksFromNow > VBN_MAX_EXTEND_BLOCKS) revert VBN_ExpiryTooFar();
+        if (!regionSlots[regionId].configured) revert VBN_RegionInvalid();
+        uint256 maxTunnels = _effectiveMaxTunnels(msg.sender);
+        if (tunnelIdsBySubscriber[msg.sender].length >= maxTunnels) revert VBN_TierLimit();
+
+        tunnelCounter++;
+        tunnelId = tunnelCounter;
+        uint256 expiresAt = block.number + expiryBlocksFromNow;
+
+        tunnelConfigs[tunnelId] = TunnelConfig({
+            subscriber: msg.sender,
+            configHash: configHash,
+            regionId: regionId,
+            expiresAtBlock: expiresAt,
+            bandwidthCreditsWei: msg.value,
+            createdAtBlock: block.number,
+            revoked: false
