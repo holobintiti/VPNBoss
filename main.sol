@@ -1038,3 +1038,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
     function getActiveTunnelIdsInRegion(uint8 regionId) external view returns (uint256[] memory) {
         uint256[] storage ids = _tunnelIdsByRegion[regionId];
         uint256 count = 0;
+        for (uint256 i = 0; i < ids.length; i++) {
+            TunnelConfig storage tc = tunnelConfigs[ids[i]];
+            if (tc.createdAtBlock != 0 && !tc.revoked && block.number < tc.expiresAtBlock) count++;
+        }
+        uint256[] memory out = new uint256[](count);
+        uint256 j = 0;
+        for (uint256 i = 0; i < ids.length; i++) {
+            TunnelConfig storage tc = tunnelConfigs[ids[i]];
+            if (tc.createdAtBlock != 0 && !tc.revoked && block.number < tc.expiresAtBlock) {
+                out[j] = ids[i];
+                j++;
+            }
+        }
+        return out;
+    }
+
+    function getActiveNodeIdsInRegion(uint8 regionId) external view returns (uint256[] memory) {
+        uint256[] storage ids = nodeIdsByRegion[regionId];
+        uint256 count = 0;
+        for (uint256 i = 0; i < ids.length; i++) {
+            if (exitNodes[ids[i]].active) count++;
+        }
+        uint256[] memory out = new uint256[](count);
+        uint256 j = 0;
+        for (uint256 i = 0; i < ids.length; i++) {
+            if (exitNodes[ids[i]].active) {
+                out[j] = ids[i];
+                j++;
+            }
+        }
+        return out;
+    }
+
+    /// @param tunnelIds Tunnel ids to query.
+    /// @return labelHashes Label hashes for each tunnel.
+    /// @return lastUsedAtBlocks Last block at which tunnel was used in a session.
+    /// @return totalSessionsCounts Total sessions that used each tunnel.
+    function getTunnelMetadataBatch(uint256[] calldata tunnelIds) external view returns (
+        bytes32[] memory labelHashes,
+        uint256[] memory lastUsedAtBlocks,
