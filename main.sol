@@ -878,3 +878,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
         bool[] memory closed
     ) {
         uint256 n = sessionIds.length;
+        tunnelIds = new uint256[](n);
+        nodeIds = new uint256[](n);
+        openedAtBlocks = new uint256[](n);
+        bandwidthCreditsUsed = new uint256[](n);
+        totalBytesLogged = new uint256[](n);
+        closed = new bool[](n);
+        for (uint256 i = 0; i < n; i++) {
+            SessionRecord storage sr = sessionRecords[sessionIds[i]];
+            tunnelIds[i] = sr.tunnelId;
+            nodeIds[i] = sr.nodeId;
+            openedAtBlocks[i] = sr.openedAtBlock;
+            bandwidthCreditsUsed[i] = sr.bandwidthCreditsUsed;
+            totalBytesLogged[i] = sr.totalBytesLogged;
+            closed[i] = sr.closed;
+        }
+    }
+
+    function getSubscriberTunnelCount(address subscriber) external view returns (uint256) {
+        return tunnelIdsBySubscriber[subscriber].length;
+    }
+
+    function getEffectiveMaxTunnels(address subscriber) external view returns (uint256) {
+        return _effectiveMaxTunnels(subscriber);
+    }
+
+    function getSubscriptionTier(uint8 tierId) external view returns (
+        uint256 maxTunnels,
+        uint256 minStakeWei,
+        bool active
+    ) {
+        SubscriptionTier storage st = subscriptionTiers[tierId];
+        return (st.maxTunnels, st.minStakeWei, st.active);
+    }
+
+    /// @param tierIds Tier ids to query (0 to VBN_MAX_TIERS - 1).
+    /// @return maxTunnels Max tunnels per tier.
+    /// @return minStakeWei Min stake for tier (optional use).
+    /// @return active Whether tier is active.
+    function getSubscriptionTiersBatch(uint8[] calldata tierIds) external view returns (
+        uint256[] memory maxTunnels,
