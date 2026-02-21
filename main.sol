@@ -918,3 +918,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
     /// @return active Whether tier is active.
     function getSubscriptionTiersBatch(uint8[] calldata tierIds) external view returns (
         uint256[] memory maxTunnels,
+        uint256[] memory minStakeWei,
+        bool[] memory active
+    ) {
+        uint256 n = tierIds.length;
+        maxTunnels = new uint256[](n);
+        minStakeWei = new uint256[](n);
+        active = new bool[](n);
+        for (uint256 i = 0; i < n; i++) {
+            SubscriptionTier storage st = subscriptionTiers[tierIds[i]];
+            maxTunnels[i] = st.maxTunnels;
+            minStakeWei[i] = st.minStakeWei;
+            active[i] = st.active;
+        }
+    }
+
+    /// @param subscriber Subscriber address.
+    /// @param offset Start index in subscriber's tunnel list.
+    /// @param limit Max number of tunnel ids to return.
+    /// @return out Tunnel ids for the subscriber in the requested range.
+    function getSubscriberTunnelIdsPaginated(address subscriber, uint256 offset, uint256 limit) external view returns (uint256[] memory out) {
+        uint256[] storage ids = tunnelIdsBySubscriber[subscriber];
+        uint256 len = ids.length;
+        if (offset >= len) return new uint256[](0);
+        uint256 end = offset + limit;
+        if (end > len) end = len;
+        uint256 sliceLen = end - offset;
+        out = new uint256[](sliceLen);
+        for (uint256 i = 0; i < sliceLen; i++) {
+            out[i] = ids[offset + i];
+        }
+    }
+
+    function getPendingTreasuryWei(address account) external view returns (uint256) {
+        return pendingTreasuryWei[account];
+    }
+
+    function getRegionsConfigBatch(uint8[] calldata regionIds) external view returns (
+        uint256[] memory maxNodes,
+        uint256[] memory feeBps,
+        uint256[] memory nodeCounts,
