@@ -958,3 +958,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
         uint256[] memory maxNodes,
         uint256[] memory feeBps,
         uint256[] memory nodeCounts,
+        bool[] memory configured
+    ) {
+        uint256 n = regionIds.length;
+        maxNodes = new uint256[](n);
+        feeBps = new uint256[](n);
+        nodeCounts = new uint256[](n);
+        configured = new bool[](n);
+        for (uint256 i = 0; i < n; i++) {
+            RegionSlot storage rs = regionSlots[regionIds[i]];
+            maxNodes[i] = rs.maxNodes;
+            feeBps[i] = rs.feeBps;
+            nodeCounts[i] = rs.nodeCount;
+            configured[i] = rs.configured;
+        }
+    }
+
+    function getSubscriberTunnelsSummary(address subscriber) external view returns (
+        uint256[] memory tunnelIds,
+        uint256[] memory expiresAtBlocks,
+        uint256[] memory bandwidthCreditsWei,
+        bool[] memory active
+    ) {
+        uint256[] memory ids = tunnelIdsBySubscriber[subscriber];
+        uint256 n = ids.length;
+        tunnelIds = new uint256[](n);
+        expiresAtBlocks = new uint256[](n);
+        bandwidthCreditsWei = new uint256[](n);
+        active = new bool[](n);
+        for (uint256 i = 0; i < n; i++) {
+            uint256 tid = ids[i];
+            TunnelConfig storage tc = tunnelConfigs[tid];
+            tunnelIds[i] = tid;
+            expiresAtBlocks[i] = tc.expiresAtBlock;
+            bandwidthCreditsWei[i] = tc.bandwidthCreditsWei;
+            active[i] = tc.createdAtBlock != 0 && !tc.revoked && block.number < tc.expiresAtBlock;
+        }
+    }
+
+    function currentBlockNumber() external view returns (uint256) {
+        return block.number;
