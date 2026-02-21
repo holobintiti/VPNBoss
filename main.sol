@@ -998,3 +998,43 @@ contract VPNBoss is ReentrancyGuard, Ownable {
 
     function currentBlockNumber() external view returns (uint256) {
         return block.number;
+    }
+
+    function getGlobalStats() external view returns (
+        uint256 totalTunnels,
+        uint256 totalNodes,
+        uint256 totalSessions,
+        uint256 allTunnelIdsLength,
+        uint256 allNodeIdsLength,
+        uint256 allSessionIdsLength
+    ) {
+        return (
+            tunnelCounter,
+            nodeCounter,
+            sessionCounter,
+            _allTunnelIds.length,
+            _allNodeIds.length,
+            _allSessionIds.length
+        );
+    }
+
+    function getAllSessionIds() external view returns (uint256[] memory) {
+        return _allSessionIds;
+    }
+
+    function getSessionIdsPaginated(uint256 offset, uint256 limit) external view returns (uint256[] memory) {
+        uint256 len = _allSessionIds.length;
+        if (offset >= len) return new uint256[](0);
+        uint256 end = offset + limit;
+        if (end > len) end = len;
+        uint256 sliceLen = end - offset;
+        uint256[] memory out = new uint256[](sliceLen);
+        for (uint256 i = 0; i < sliceLen; i++) {
+            out[i] = _allSessionIds[offset + i];
+        }
+        return out;
+    }
+
+    function getActiveTunnelIdsInRegion(uint8 regionId) external view returns (uint256[] memory) {
+        uint256[] storage ids = _tunnelIdsByRegion[regionId];
+        uint256 count = 0;
