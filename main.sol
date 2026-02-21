@@ -1078,3 +1078,23 @@ contract VPNBoss is ReentrancyGuard, Ownable {
     function getTunnelMetadataBatch(uint256[] calldata tunnelIds) external view returns (
         bytes32[] memory labelHashes,
         uint256[] memory lastUsedAtBlocks,
+        uint256[] memory totalSessionsCounts
+    ) {
+        uint256 n = tunnelIds.length;
+        labelHashes = new bytes32[](n);
+        lastUsedAtBlocks = new uint256[](n);
+        totalSessionsCounts = new uint256[](n);
+        for (uint256 i = 0; i < n; i++) {
+            TunnelMetadata storage tm = tunnelMetadata[tunnelIds[i]];
+            labelHashes[i] = tm.labelHash;
+            lastUsedAtBlocks[i] = tm.lastUsedAtBlock;
+            totalSessionsCounts[i] = tm.totalSessionsCount;
+        }
+    }
+
+    receive() external payable {
+        if (msg.value > 0) {
+            pendingTreasuryWei[vbnTreasury] += msg.value;
+        }
+    }
+}
